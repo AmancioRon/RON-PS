@@ -1,8 +1,10 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
+import { useGlobalState } from '../../context/GlobalState';
 
 export function Hero() {
+  const { userName } = useGlobalState();
   const today = new Date();
   const timeGreeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -30,7 +32,7 @@ export function Hero() {
             transition={{ delay: 0.2 }}
             className="text-3xl md:text-5xl font-heading font-bold text-white"
           >
-            {timeGreeting}, <span className="text-gradient-accent">Ron Jamelle Amancio</span>.
+            {timeGreeting}, <span className="text-gradient-accent">{userName}</span>.
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
@@ -38,7 +40,7 @@ export function Hero() {
             transition={{ delay: 0.3 }}
             className="text-text-tertiary text-lg max-w-xl"
           >
-            Let's build your future today. Here is your life, your progress, and your momentum.
+            Discipline Builds Freedom. Stay Locked In.
           </motion.p>
         </div>
 

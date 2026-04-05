@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -11,9 +11,14 @@ import {
   Dumbbell, 
   Target,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGlobalState } from '../../context/GlobalState';
+import { LongPressable } from '../ui/LongPressable';
+import { supabase } from '../../lib/supabase';
+import { ImageCropperModal } from '../ui/ImageCropperModal';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,11 +39,78 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { userName, userAvatar, setUserAvatar } = useGlobalState();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setCropImageSrc(reader.result as string);
+      setIsCropperOpen(true);
+    });
+    reader.readAsDataURL(file);
+    
+    // Reset input so the same file can be selected again if needed
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setIsCropperOpen(false);
+    setCropImageSrc(null);
+
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) return;
+
+      const fileExt = 'jpeg';
+      const fileName = `${user.id}-avatar-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, croppedBlob, { contentType: 'image/jpeg' });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('profiles').getPublicUrl(filePath);
+      
+      setUserAvatar(data.publicUrl);
+      await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id);
+    } catch (err) {
+      console.error('Error uploading image:', err);
+    }
+  };
+
   return (
     <>
+      <input type="file" accept="image/*" ref={avatarInputRef} className="hidden" onChange={handleFileChange} />
+
+      {cropImageSrc && (
+        <ImageCropperModal
+          isOpen={isCropperOpen}
+          onClose={() => {
+            setIsCropperOpen(false);
+            setCropImageSrc(null);
+          }}
+          imageSrc={cropImageSrc}
+          onCropComplete={handleCropComplete}
+        />
+      )}
+
       {/* Mobile Menu Button */}
       <button 
         onClick={toggleSidebar}
@@ -68,12 +140,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         )}
       >
         <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-violet flex items-center justify-center shadow-lg glow-effect">
-            <span className="font-heading font-bold text-white text-lg">R</span>
+          <div className="w-12 h-12 flex items-center justify-center shrink-0">
+            <img src="/logo.png" alt="Life Stack Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="font-heading font-semibold text-text-primary tracking-wide">Ron's OS</h1>
-            <p className="text-xs text-text-tertiary">Build. Track. Grow.</p>
+            <h1 className="font-heading font-semibold text-text-primary tracking-wide text-lg">Life Stack</h1>
           </div>
         </div>
 
@@ -109,16 +180,19 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           })}
         </nav>
 
-        <div className="p-6 border-t border-surface-border/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-surface-hover border border-surface-border overflow-hidden">
-              <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Ron&backgroundColor=transparent" alt="Ron" className="w-full h-full object-cover" />
+        <div className="p-6 border-t border-surface-border/50 flex items-center justify-between">
+          <LongPressable onLongPress={() => avatarInputRef.current?.click()} className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-surface-hover border border-surface-border overflow-hidden shrink-0">
+              <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">Ron Jamelle Amancio</p>
+              <p className="text-sm font-medium text-text-primary truncate">{userName}</p>
               <p className="text-xs text-text-tertiary truncate">Personal HQ</p>
             </div>
-          </div>
+          </LongPressable>
+          <button onClick={handleLogout} className="p-2 text-text-tertiary hover:text-rose-400 transition-colors rounded-xl hover:bg-surface-hover">
+            <LogOut size={18} />
+          </button>
         </div>
       </motion.aside>
     </>

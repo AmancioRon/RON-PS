@@ -50,6 +50,11 @@ interface GlobalStateContextType {
 
   proteinTarget: number;
   setProteinTarget: React.Dispatch<React.SetStateAction<number>>;
+
+  userName: string;
+  setUserName: React.Dispatch<React.SetStateAction<string>>;
+  userAvatar: string;
+  setUserAvatar: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
@@ -118,6 +123,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   const [monthlyGoal, setMonthlyGoal] = useState<number>(50000);
   const [proteinTarget, setProteinTarget] = useState<number>(160);
 
+  const [userName, setUserName] = useState<string>('Ron Jamelle Amancio');
+  const [userAvatar, setUserAvatar] = useState<string>('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80');
+
   return (
     <GlobalStateContext.Provider value={{
       activities, logActivity,
@@ -131,7 +139,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       tasks, setTasks,
       grinds, setGrinds,
       monthlyGoal, setMonthlyGoal,
-      proteinTarget, setProteinTarget
+      proteinTarget, setProteinTarget,
+      userName, setUserName,
+      userAvatar, setUserAvatar
     }}>
       {children}
     </GlobalStateContext.Provider>

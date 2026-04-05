@@ -1,34 +1,56 @@
-import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
-const data = {
-  netWorth: [
-    { name: 'Jan', amount: 35000 },
-    { name: 'Feb', amount: 36200 },
-    { name: 'Mar', amount: 38500 },
-    { name: 'Apr', amount: 39100 },
-    { name: 'May', amount: 41000 },
-    { name: 'Jun', amount: 42500 },
-  ],
-  savings: [
-    { name: 'Jan', amount: 12000 },
-    { name: 'Feb', amount: 12500 },
-    { name: 'Mar', amount: 14000 },
-    { name: 'Apr', amount: 14200 },
-    { name: 'May', amount: 15500 },
-    { name: 'Jun', amount: 16800 },
-  ]
-};
+import { useGlobalState } from '../../context/GlobalState';
 
 export function FinanceCharts() {
+  const { transactions, storeItems } = useGlobalState();
   const [view, setView] = useState<'netWorth' | 'savings'>('netWorth');
   
-  const currentData = data[view];
-  const currentValue = currentData[currentData.length - 1].amount;
+  const chartData = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    let cumulativeSavings = 0;
+    
+    // Calculate total assets from store items (inventory value)
+    const totalAssetsValue = storeItems.reduce((acc, item) => {
+      if (item.status !== 'sold') {
+        return acc + (item.boughtPrice * item.quantity);
+      }
+      return acc;
+    }, 0);
+
+    return months.map((month, index) => {
+      // Get transactions for this month
+      const monthTxs = transactions.filter(tx => {
+        const txDate = new Date(tx.date);
+        return txDate.getFullYear() === currentYear && txDate.getMonth() === index;
+      });
+
+      const monthNet = monthTxs.reduce((acc, curr) => {
+        return curr.type === 'income' ? acc + curr.amount : acc - curr.amount;
+      }, 0);
+
+      cumulativeSavings += monthNet;
+
+      return {
+        name: month,
+        savings: cumulativeSavings,
+        netWorth: cumulativeSavings + totalAssetsValue
+      };
+    });
+  }, [transactions, storeItems]);
+
+  const currentMonthIndex = new Date().getMonth();
+  const currentValue = chartData[currentMonthIndex][view];
   
   const toggleView = () => setView(v => v === 'netWorth' ? 'savings' : 'netWorth');
+
+  // Default brush range: show current month and a few months back
+  const startIndex = Math.max(0, currentMonthIndex - 3);
+  const endIndex = Math.min(11, currentMonthIndex + 2);
 
   return (
     <div className="glass-panel rounded-3xl p-6 md:p-8 h-full flex flex-col relative overflow-hidden">
@@ -45,7 +67,7 @@ export function FinanceCharts() {
               <ChevronRight size={20} />
             </button>
           </div>
-          <p className="text-sm text-text-tertiary mt-1 ml-10">Your financial progress in 2026</p>
+          <p className="text-sm text-text-tertiary mt-1 ml-10">Your financial progress in {new Date().getFullYear()}</p>
         </div>
         <div className="text-right">
           <AnimatePresence mode="wait">
@@ -63,9 +85,9 @@ export function FinanceCharts() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-[200px] w-full mt-4 relative z-10">
+      <div className="flex-1 min-h-[250px] w-full mt-4 relative z-10">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={currentData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-accent-teal)" stopOpacity={0.3}/>
@@ -101,11 +123,20 @@ export function FinanceCharts() {
             />
             <Area 
               type="monotone" 
-              dataKey="amount" 
+              dataKey={view} 
               stroke="var(--color-accent-teal)" 
               strokeWidth={3}
               fillOpacity={1} 
               fill="url(#colorAmount)" 
+            />
+            <Brush 
+              dataKey="name" 
+              height={30} 
+              stroke="var(--color-accent-teal)" 
+              fill="var(--color-surface)"
+              tickFormatter={() => ''}
+              startIndex={startIndex}
+              endIndex={endIndex}
             />
           </AreaChart>
         </ResponsiveContainer>
