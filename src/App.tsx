@@ -14,11 +14,47 @@ import { Auth } from './components/auth/Auth';
 import { Onboarding } from './components/auth/Onboarding';
 import { supabase } from './lib/supabase';
 
+function MainApp() {
+  const { setUserName, setUserAvatar } = useGlobalState();
+  
+  // We can fetch the user name/avatar here if needed, but we already did it in AppContent
+  // Actually, we should set them from the session data passed down, or just let GlobalState handle it.
+  
+  return (
+    <Layout>
+      {(activeTab, setActiveTab) => {
+        switch (activeTab) {
+          case 'dashboard':
+            return <Dashboard setActiveTab={setActiveTab} />;
+          case 'game-grind':
+            return <GameGrind />;
+          case 'video-ideas':
+            return <VideoIdeas />;
+          case 'savings':
+            return <Savings />;
+          case 'store':
+            return <Store />;
+          case 'customers':
+            return <Customers />;
+          case 'achievements':
+            return <Achievements />;
+          case 'diet-gym':
+            return <DietGym />;
+          case 'goals':
+            return <Goals />;
+          default:
+            return <Dashboard setActiveTab={setActiveTab} />;
+        }
+      }}
+    </Layout>
+  );
+}
+
 function AppContent() {
   const [session, setSession] = useState<any>(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { setUserName, setUserAvatar } = useGlobalState();
+  const [profileData, setProfileData] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,8 +87,14 @@ function AppContent() {
         setNeedsOnboarding(true);
       } else if (data) {
         setNeedsOnboarding(false);
-        if (data.full_name) setUserName(data.full_name);
-        if (data.avatar_url) setUserAvatar(data.avatar_url);
+        setProfileData(data);
+        
+        // Sync app_state from Supabase to localStorage BEFORE GlobalStateProvider mounts
+        if (data.app_state) {
+          Object.keys(data.app_state).forEach(key => {
+            window.localStorage.setItem(key, JSON.stringify(data.app_state[key]));
+          });
+        }
       }
     } catch (error) {
       console.error('Error checking profile:', error);
@@ -81,39 +123,12 @@ function AppContent() {
   }
 
   return (
-    <Layout>
-      {(activeTab, setActiveTab) => {
-        switch (activeTab) {
-          case 'dashboard':
-            return <Dashboard setActiveTab={setActiveTab} />;
-          case 'game-grind':
-            return <GameGrind />;
-          case 'video-ideas':
-            return <VideoIdeas />;
-          case 'savings':
-            return <Savings />;
-          case 'store':
-            return <Store />;
-          case 'customers':
-            return <Customers />;
-          case 'achievements':
-            return <Achievements />;
-          case 'diet-gym':
-            return <DietGym />;
-          case 'goals':
-            return <Goals />;
-          default:
-            return <Dashboard setActiveTab={setActiveTab} />;
-        }
-      }}
-    </Layout>
+    <GlobalStateProvider initialName={profileData?.full_name} initialAvatar={profileData?.avatar_url}>
+      <MainApp />
+    </GlobalStateProvider>
   );
 }
 
 export default function App() {
-  return (
-    <GlobalStateProvider>
-      <AppContent />
-    </GlobalStateProvider>
-  );
+  return <AppContent />;
 }
