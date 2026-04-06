@@ -94,6 +94,10 @@ function AppContent() {
           Object.keys(data.app_state).forEach(key => {
             window.localStorage.setItem(key, JSON.stringify(data.app_state[key]));
           });
+        } else {
+          // Clear local storage for new users so they don't inherit data from previous sessions
+          const keysToClear = ['ls_transactions', 'ls_storeItems', 'ls_videoIdeas', 'ls_goals', 'ls_customers', 'ls_achievements', 'ls_meals', 'ls_gymDone', 'ls_creatineDone', 'ls_tasks', 'ls_grinds', 'ls_monthlyGoal', 'ls_proteinTarget'];
+          keysToClear.forEach(key => window.localStorage.removeItem(key));
         }
       }
     } catch (error) {

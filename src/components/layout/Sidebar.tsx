@@ -49,6 +49,8 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = async () => {
+    const keysToClear = ['ls_transactions', 'ls_storeItems', 'ls_videoIdeas', 'ls_goals', 'ls_customers', 'ls_achievements', 'ls_meals', 'ls_gymDone', 'ls_creatineDone', 'ls_tasks', 'ls_grinds', 'ls_monthlyGoal', 'ls_proteinTarget'];
+    keysToClear.forEach(key => window.localStorage.removeItem(key));
     await supabase.auth.signOut();
   };
 
