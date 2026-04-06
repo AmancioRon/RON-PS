@@ -47,7 +47,7 @@ export function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
       >
         <div className="flex flex-col items-center mb-8">
           <div className="w-24 h-24 flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="Life Stack Logo" className="w-full h-full object-contain" />
+            <img src="/Logo.png" alt="Life Stack Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-heading font-bold text-white mb-2">Life Stack</h1>
           <p className="text-text-tertiary text-center">Discipline Builds Freedom. Stay Locked In.</p>
