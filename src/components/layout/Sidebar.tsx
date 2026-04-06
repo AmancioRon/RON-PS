@@ -19,6 +19,7 @@ import { useGlobalState } from '../../context/GlobalState';
 import { LongPressable } from '../ui/LongPressable';
 import { supabase } from '../../lib/supabase';
 import { ImageCropperModal } from '../ui/ImageCropperModal';
+import logoImg from '../../assets/Logo.png';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -141,7 +142,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       >
         <div className="p-6 flex items-center gap-3">
           <div className="w-12 h-12 flex items-center justify-center shrink-0">
-            <img src="/Logo.png" alt="Life Stack Logo" className="w-full h-full object-contain" />
+            <img src={logoImg} alt="Life Stack Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="font-heading font-semibold text-text-primary tracking-wide text-lg">Life Stack</h1>
